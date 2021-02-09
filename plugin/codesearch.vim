@@ -3,4 +3,4 @@ if exists('g:loaded_codesearch')
 endif
 let g:loaded_codesearch = 1
 
-command! Hoge call codesearch#test()
+command! CodeSearch call codesearch#open()

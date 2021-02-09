@@ -6,10 +6,12 @@ function! codesearch#open() abort
   setlocal buftype=acwrite
 
   " 既にバッファが存在していたら上書きする
-  let codesearchbuf = bufnr('codesearch')
-  if codesearchbuf > 0
-    bd! codesearch
+  let bufn = get(s:, 'codesearchbufn', -1)
+  if bufn > 0
+    exe 'bd!' . bufn
   endif
+
+  let s:codesearchbufn = bufnr('')
 
   f codesearch
   " set noconfirm

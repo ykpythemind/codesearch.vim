@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,7 +22,10 @@ func main() {
 	wrt := io.MultiWriter(os.Stdout, f)
 	log.SetOutput(f)
 
-	if err := run(os.Stdin, wrt); err != nil {
+	cwd := flag.String("cwd", "", "")
+	flag.Parse()
+
+	if err := run(*cwd, os.Stdin, wrt); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -60,7 +64,19 @@ func ParseSearchQuery(str string) (*SearchQuery, error) {
 	return &SearchQuery{Pattern: pattern}, nil
 }
 
-func run(in io.Reader, out io.Writer) error {
+func run(cwd string, in io.Reader, out io.Writer) error {
+	if cwd != "" {
+		current, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		err := os.Chdir(cwd)
+		if err != nil {
+			return err
+		}
+		defer os.Chdir(current)
+	}
+
 	b, err := ioutil.ReadAll(in)
 	if err != nil {
 		return err

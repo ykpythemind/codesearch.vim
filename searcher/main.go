@@ -70,7 +70,7 @@ func run(cwd string, in io.Reader, out io.Writer) error {
 		if err != nil {
 			return err
 		}
-		err := os.Chdir(cwd)
+		err = os.Chdir(cwd)
 		if err != nil {
 			return err
 		}

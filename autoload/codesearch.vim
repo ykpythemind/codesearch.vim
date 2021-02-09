@@ -16,16 +16,16 @@ function! codesearch#open() abort
 
   let s:codesearchbufn = bufnr('')
 
-  let pos = getpos(".")
-  call append(1, "▿ includes")
-  call append(2, "")
-  call append(3, "▿ excludes")
-
   f codesearch
   autocmd BufWriteCmd <buffer> call s:search()
   autocmd FileType codesearch nnoremap <buffer> q <C-w>c
   $
   startinsert
+
+  let pos = getpos(".")
+  call append(1, "▿ includes")
+  call append(2, "")
+  call append(3, "▿ excludes")
   call setpos('.', pos)
 endfunction
 

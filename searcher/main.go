@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func main() {
@@ -18,7 +21,7 @@ func main() {
 	wrt := io.MultiWriter(os.Stdout, f)
 	log.SetOutput(f)
 
-	if err := run(wrt); err != nil {
+	if err := run(os.Stdin, wrt); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -26,13 +29,49 @@ func main() {
 	os.Exit(0)
 }
 
-func run(out io.Writer) error {
+func ParseSearchQuery(str string) (*SearchQuery, error) {
+	scanner := bufio.NewScanner(strings.NewReader(str))
 
-	// ParseSearchQueryFromInput
+	pattern := ""
+	patternReading := true
+	matchedEndpattern := false
 
-	q := SearchQuery{Pattern: "ma"}
+	for scanner.Scan() {
+		t := scanner.Text()
+		if strings.HasPrefix(t, "---===---") {
+			matchedEndpattern = true
+			patternReading = false
+			// remove before line break
+			pattern = strings.TrimRight(pattern, "\n")
+		} else {
+			// read pattern
+			if patternReading {
+				pattern += t
+			}
+		}
+	}
 
-	rgargs, err := getRgArgs(q)
+	// 最後まで読んだ ---
+
+	if !matchedEndpattern {
+		pattern = strings.TrimRight(pattern, "\n")
+	}
+
+	return &SearchQuery{Pattern: pattern}, nil
+}
+
+func run(in io.Reader, out io.Writer) error {
+	b, err := ioutil.ReadAll(in)
+	if err != nil {
+		return err
+	}
+
+	query, err := ParseSearchQuery(string(b))
+	if err != nil {
+		return err
+	}
+
+	rgargs, err := getRgArgs(*query)
 	if err != nil {
 		return err
 	}

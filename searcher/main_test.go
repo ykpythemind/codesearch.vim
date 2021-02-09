@@ -15,6 +15,10 @@ func TestParseSearchQuery(t *testing.T) {
 		{input: `piyo
 ---===---
 fuga`, want: SearchQuery{Pattern: "piyo"}},
+		{input: `piyo
+---===---
+▿ includes
+app/,*.jpg`, want: SearchQuery{Pattern: "piyo", Includes: "app/,*.jpg"}},
 	}
 
 	for _, tc := range tc {

@@ -50,20 +50,33 @@ func main() {
 	os.Exit(0)
 }
 
+const metaMarker = "▿"
+
 func ParseSearchQuery(str string) (*SearchQuery, error) {
 	scanner := bufio.NewScanner(strings.NewReader(str))
 
 	pattern := ""
+	includes := ""
 	patternReading := true
 	matchedEndpattern := false
 
 	for scanner.Scan() {
 		t := scanner.Text()
+
+	scaned:
 		if strings.HasPrefix(t, "---===---") {
 			matchedEndpattern = true
 			patternReading = false
 			// remove before line break
 			pattern = strings.TrimRight(pattern, "\n")
+		} else if strings.HasPrefix(t, metaMarker+" includes") {
+			if scanner.Scan() {
+				t = scanner.Text()
+				if strings.TrimSpace(t) == "" || strings.HasPrefix(t, metaMarker) {
+					goto scaned
+				}
+				includes = t
+			}
 		} else {
 			// read pattern
 			if patternReading {
@@ -78,7 +91,7 @@ func ParseSearchQuery(str string) (*SearchQuery, error) {
 		pattern = strings.TrimRight(pattern, "\n")
 	}
 
-	return &SearchQuery{Pattern: pattern}, nil
+	return &SearchQuery{Pattern: pattern, Includes: includes}, nil
 }
 
 func run(cwd string, in io.Reader, out io.Writer) error {
@@ -131,7 +144,8 @@ func run(cwd string, in io.Reader, out io.Writer) error {
 }
 
 type SearchQuery struct {
-	Pattern string
+	Pattern  string
+	Includes string
 }
 
 type RgArgs []string

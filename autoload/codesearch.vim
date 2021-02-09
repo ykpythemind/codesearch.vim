@@ -16,11 +16,17 @@ function! codesearch#open() abort
 
   let s:codesearchbufn = bufnr('')
 
+  let pos = getpos(".")
+  call append(1, "▿ includes")
+  call append(2, "")
+  call append(3, "▿ excludes")
+
   f codesearch
   autocmd BufWriteCmd <buffer> call s:search()
   autocmd FileType codesearch nnoremap <buffer> q <C-w>c
   $
   startinsert
+  call setpos('.', pos)
 endfunction
 
 function! s:search()
@@ -36,7 +42,7 @@ function! s:search()
     \ 'num_matches': 0,
     \ }
 
-  let editor = has('nvim') ? s:nvim : s:vim
+  " let editor = has('nvim') ? s:nvim : s:vim
 
   call setqflist([])
 

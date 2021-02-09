@@ -34,6 +34,7 @@ func main() {
 	}
 	f, err := os.Open(os.Args[1])
 	if err != nil {
+		log.Println(err)
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -43,6 +44,7 @@ func main() {
 	flag.Parse()
 
 	if err := run(*cwd, f, wrt); err != nil {
+		log.Println(err)
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -181,9 +183,9 @@ func run(cwd string, in io.Reader, out io.Writer) error {
 
 type RgArgs []string
 
-func (args *RgArgs) Append(otherArg string) {
+func (args *RgArgs) Append(otherArg ...string) {
 	slice := *args
-	slice = append(slice, otherArg)
+	slice = append(slice, otherArg...)
 	*args = slice
 }
 
@@ -192,6 +194,24 @@ func getRgArgs(query SearchQuery) (RgArgs, error) {
 	args := RgArgs{}
 
 	args.Append("--hidden")
+
+	var doublestarIncludes, otherIncludes []string
+	_ = doublestarIncludes
+
+	otherIncludes = strings.Split(query.Includes, ",")
+	if otherIncludes[0] != "" {
+		// todo: unique
+
+		args.Append("-g", "!*")
+		for _, in := range otherIncludes {
+			// want this logic https://github.com/microsoft/vscode/blob/7e55fa0c5430f18dc478b5a680a0548d838eb47f/src/vs/workbench/services/search/node/ripgrepTextSearchEngine.ts#L393
+			globArg := in
+			args.Append("-g", globArg)
+		}
+	}
+
+	// Allow $ to match /r/n
+	args.Append("--crlf")
 
 	args.Append("--vimgrep")
 

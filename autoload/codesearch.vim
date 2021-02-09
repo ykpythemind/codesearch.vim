@@ -2,6 +2,8 @@ function! codesearch#open() abort
   new
   let n = winnr()
   execute n . 'wincmd w'
+  set winfixheight
+  resize 10
 
   setlocal buftype=acwrite
   setfiletype codesearch

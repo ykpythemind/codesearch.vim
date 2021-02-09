@@ -52,46 +52,81 @@ func main() {
 
 const metaMarker = "▿"
 
-func ParseSearchQuery(str string) (*SearchQuery, error) {
-	scanner := bufio.NewScanner(strings.NewReader(str))
+type SearchQuery struct {
+	Pattern  string
+	Includes string
+	Excludes string
+}
 
-	pattern := ""
+type QueryParser struct {
+	input          string
+	patternReading bool
+	pattern        string
+}
+
+func NewQueryParser(input string) *QueryParser {
+	return &QueryParser{input: input}
+}
+
+func (p *QueryParser) Parse() (*SearchQuery, error) {
+	scanner := bufio.NewScanner(strings.NewReader(p.input))
+	p.patternReading = true
+
 	includes := ""
-	patternReading := true
-	matchedEndpattern := false
+	excludes := ""
 
 	for scanner.Scan() {
 		t := scanner.Text()
+	scanned:
 
-	scaned:
-		if strings.HasPrefix(t, "---===---") {
-			matchedEndpattern = true
-			patternReading = false
-			// remove before line break
-			pattern = strings.TrimRight(pattern, "\n")
-		} else if strings.HasPrefix(t, metaMarker+" includes") {
+		if strings.HasPrefix(t, metaMarker+" includes") {
+			p.endPatternReading()
 			if scanner.Scan() {
 				t = scanner.Text()
-				if strings.TrimSpace(t) == "" || strings.HasPrefix(t, metaMarker) {
-					goto scaned
+				if p.ignoreLine(t) {
+					goto scanned
+				} else {
+					includes = trim(t)
 				}
-				includes = t
+			}
+		} else if strings.HasPrefix(t, metaMarker+" excludes") {
+			p.endPatternReading()
+			if scanner.Scan() {
+				t = scanner.Text()
+				if p.ignoreLine(t) {
+					goto scanned
+				} else {
+					excludes = trim(t)
+				}
 			}
 		} else {
 			// read pattern
-			if patternReading {
-				pattern += t
+			if p.patternReading {
+				p.pattern = p.pattern + t
 			}
 		}
 	}
 
 	// 最後まで読んだ ---
 
-	if !matchedEndpattern {
-		pattern = strings.TrimRight(pattern, "\n")
-	}
+	return &SearchQuery{Pattern: p.pattern, Includes: includes, Excludes: excludes}, nil
+}
 
-	return &SearchQuery{Pattern: pattern, Includes: includes}, nil
+func trim(str string) string {
+	return strings.TrimSpace(str)
+}
+
+func (p *QueryParser) ignoreLine(line string) bool {
+	return strings.TrimSpace(line) == "" || strings.HasPrefix(line, metaMarker)
+}
+
+func (p *QueryParser) endPatternReading() {
+	if !p.patternReading {
+		return
+	}
+	log.Println(p.pattern)
+	p.pattern = strings.TrimRight(p.pattern, "\n") // 最後の行の改行は削除する
+	p.patternReading = false
 }
 
 func run(cwd string, in io.Reader, out io.Writer) error {
@@ -112,7 +147,8 @@ func run(cwd string, in io.Reader, out io.Writer) error {
 		return err
 	}
 
-	query, err := ParseSearchQuery(string(b))
+	parser := NewQueryParser(string(b))
+	query, err := parser.Parse()
 	if err != nil {
 		return err
 	}
@@ -141,11 +177,6 @@ func run(cwd string, in io.Reader, out io.Writer) error {
 	}
 
 	return nil
-}
-
-type SearchQuery struct {
-	Pattern  string
-	Includes string
 }
 
 type RgArgs []string

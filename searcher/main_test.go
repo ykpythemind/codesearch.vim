@@ -1,6 +1,8 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestParseSearchQuery(t *testing.T) {
 	type test struct {
@@ -10,21 +12,30 @@ func TestParseSearchQuery(t *testing.T) {
 
 	tc := []test{
 		{input: `hoge
----===--- `, want: SearchQuery{Pattern: "hoge"}},
-		{input: `fuga---===---`, want: SearchQuery{Pattern: "fuga---===---"}},
+`, want: SearchQuery{Pattern: "hoge"}},
+		{input: `fuga ▿`, want: SearchQuery{Pattern: "fuga ▿"}},
 		{input: `piyo
----===---
-fuga`, want: SearchQuery{Pattern: "piyo"}},
+
+fuga
+`, want: SearchQuery{Pattern: "piyo\n\nfuga"}},
 		{input: `piyo
----===---
 ▿ includes
 app/,*.jpg`, want: SearchQuery{Pattern: "piyo", Includes: "app/,*.jpg"}},
+		{input: `piyo
+
+▿ includes
+app/,*.jpg
+
+▿ excludes
+hoge
+`, want: SearchQuery{Pattern: "piyo\n", Includes: "app/,*.jpg", Excludes: "hoge"}},
 	}
 
 	for _, tc := range tc {
 		tc := tc
 
-		q, err := ParseSearchQuery(tc.input)
+		parser := NewQueryParser(tc.input)
+		q, err := parser.Parse()
 		if err != nil {
 			t.Error(err)
 		}

@@ -9,23 +9,40 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
 func main() {
-	f, err := os.OpenFile("testlogfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	logf, err := os.OpenFile(filepath.Join(home, "codesearch.vim.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
-	defer f.Close()
+	defer logf.Close()
 
-	wrt := io.MultiWriter(os.Stdout, f)
-	log.SetOutput(f)
+	wrt := io.MultiWriter(os.Stdout, logf)
+	log.SetOutput(logf)
+
+	if len(os.Args) < 1 {
+		fmt.Fprintln(os.Stderr, "missing file")
+		os.Exit(1)
+	}
+	f, err := os.Open(os.Args[1])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	defer f.Close()
 
 	cwd := flag.String("cwd", "", "")
 	flag.Parse()
 
-	if err := run(*cwd, os.Stdin, wrt); err != nil {
+	if err := run(*cwd, f, wrt); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

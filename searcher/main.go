@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -162,14 +163,20 @@ func run(cwd string, in io.Reader, out io.Writer) error {
 
 	/*
 		const cwd = options.folder.fsPath;
-
-		const escapedArgs = rgArgs
-			.map(arg => arg.match(/^-/) ? arg : `'${arg}'`)
-			.join(' ');
-		this.outputChannel.appendLine(`${rgDiskPath} ${escapedArgs}\n - cwd: ${cwd}`);
 	*/
 
+	var escapedArgs []string
+	for _, arg := range rgargs {
+		if !argRegexp.MatchString(arg) {
+			// escape
+			arg = fmt.Sprintf("'%s'", arg)
+		}
+
+		escapedArgs = append(escapedArgs, arg)
+	}
+
 	log.Printf("rgargs: %v\n", rgargs)
+	log.Println(fmt.Sprintf(`escaped args: %+v`, escapedArgs))
 
 	cmd := exec.Command("rg", rgargs...)
 	cmd.Stdout = out
@@ -188,6 +195,8 @@ func (args *RgArgs) Append(otherArg ...string) {
 	slice = append(slice, otherArg...)
 	*args = slice
 }
+
+var argRegexp = regexp.MustCompile("^-")
 
 // see https://github.com/microsoft/vscode/blob/7e55fa0c5430f18dc478b5a680a0548d838eb47f/src/vs/workbench/services/search/node/ripgrepTextSearchEngine.ts#L378
 func getRgArgs(query SearchQuery) (RgArgs, error) {
@@ -219,8 +228,9 @@ func getRgArgs(query SearchQuery) (RgArgs, error) {
 
 	var searchPatternAfterDoubleDashes string
 
-	// do some parse
+	// do some parse, use regexp
 	searchPatternAfterDoubleDashes = query.Pattern
+	args.Append("--fixed-strings")
 
 	// これで区別が必要
 	args.Append("--")

@@ -176,7 +176,9 @@ func run(cwd string, in io.Reader, out io.Writer) error {
 	}
 
 	log.Printf("rgargs: %v\n", rgargs)
-	log.Println(fmt.Sprintf(`escaped args: %+v`, escapedArgs))
+	// log.Println(fmt.Sprintf(`escaped args: %+v`, escapedArgs))
+
+	// joinedArgs := strings.Join(escapedArgs, " ")
 
 	cmd := exec.Command("rg", rgargs...)
 	cmd.Stdout = out
@@ -213,11 +215,20 @@ func getRgArgs(query SearchQuery) (RgArgs, error) {
 
 		args.Append("-g", "!*")
 		for _, in := range otherIncludes {
-			// want this logic https://github.com/microsoft/vscode/blob/7e55fa0c5430f18dc478b5a680a0548d838eb47f/src/vs/workbench/services/search/node/ripgrepTextSearchEngine.ts#L393
-			globArg := in
-			args.Append("-g", globArg)
+			// .から始まるものは拡張子として扱う
+			if strings.HasPrefix(in, ".") {
+				args.Append("-g", fmt.Sprintf("**/*%s", in))
+				continue
+			}
+
+			for _, glob := range spreadGlobComponents(in) {
+				glob = anchorGlob(glob)
+				args.Append("-g", glob)
+			}
 		}
 	}
+
+	// doubleStarIncludes
 
 	// Allow $ to match /r/n
 	args.Append("--crlf")
@@ -243,4 +254,73 @@ func getRgArgs(query SearchQuery) (RgArgs, error) {
 	args.Append(".")
 
 	return args, nil
+}
+
+// `"foo/*bar/something"` -> `["foo", "foo/*bar", "foo/*bar/something", "foo/*bar/something/**"]`
+func spreadGlobComponents(globArg string) []string {
+	components := splitGlobAware(globArg, '/')
+	var ret []string
+
+	l := len(components)
+	for i := range components {
+		r := components[0 : i+1]
+		s := strings.Join(r, "/")
+		ret = append(ret, s)
+		if i == l-1 && !strings.HasSuffix(s, "*") {
+			s += "/**"
+			ret = append(ret, s)
+		}
+	}
+
+	return ret
+}
+
+func anchorGlob(glob string) string {
+	if strings.HasPrefix(glob, "**") || strings.HasPrefix(glob, "/") {
+		return glob
+	} else {
+		return "/" + glob
+	}
+}
+
+func splitGlobAware(pattern string, splitChar rune) (segments []string) {
+	if pattern == "" {
+		return
+	}
+	inBraces := false
+	inBrackets := false
+
+	val := ""
+
+	for _, char := range pattern {
+		switch char {
+		case splitChar:
+			if !inBraces && !inBrackets {
+				segments = append(segments, val)
+				val = ""
+				continue
+			}
+			break
+		case '{':
+			inBraces = true
+			break
+		case '}':
+			inBraces = false
+			break
+		case '[':
+			inBrackets = true
+			break
+		case ']':
+			inBrackets = false
+			break
+		}
+
+		val += string(char)
+	}
+
+	if val != "" {
+		segments = append(segments, val)
+	}
+
+	return
 }

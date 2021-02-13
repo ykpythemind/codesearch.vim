@@ -293,7 +293,13 @@ func getRgArgs(query SearchQuery) (RgArgs, error) {
 
 	// todo: doubleStarIncludes
 
-	// todo: excludes
+	excludes := strings.Split(query.Excludes, ",")
+	if excludes[0] != "" {
+		for _, glob := range excludes {
+			glob = anchorGlob(glob)
+			args.Append("-g", fmt.Sprintf("!%s", glob))
+		}
+	}
 
 	if query.Option.useIgnoreSettingFile {
 		// ???

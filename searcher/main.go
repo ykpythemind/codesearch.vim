@@ -106,7 +106,7 @@ func (p *QueryParser) Parse() (*SearchQuery, error) {
 				if p.ignoreLine(t) {
 					goto scanned
 				} else {
-					includes = trim(t)
+					includes = strings.TrimSpace(t)
 				}
 			}
 		} else if strings.HasPrefix(t, metaMarker+" excludes") {
@@ -116,7 +116,7 @@ func (p *QueryParser) Parse() (*SearchQuery, error) {
 				if p.ignoreLine(t) {
 					goto scanned
 				} else {
-					excludes = trim(t)
+					excludes = strings.TrimSpace(t)
 				}
 			}
 		} else if strings.HasPrefix(t, metaMarker+" options") {
@@ -126,7 +126,7 @@ func (p *QueryParser) Parse() (*SearchQuery, error) {
 				if p.ignoreLine(t) {
 					goto scanned
 				} else {
-					opt, err := parseOptions(trim(t))
+					opt, err := parseOptions(strings.TrimSpace(t))
 					if err == nil {
 						options = *opt
 					}
@@ -160,16 +160,12 @@ func parseOptions(optStr string) (*queryOption, error) {
 		casesence = smartCase
 	} else if casestr == "ignorecase" {
 		casesence = ignoreCase
-	} else if casestr == "sensitive" {
+	} else if casestr == "casesensitive" {
 		casesence = caseSensitive
 	}
 	useregexp := strings.TrimSpace(matched[3])
 
 	return &queryOption{useRegexp: useregexp == "true", caseSensitivity: casesence}, nil
-}
-
-func trim(str string) string {
-	return strings.TrimSpace(str)
 }
 
 func (p *QueryParser) ignoreLine(line string) bool {
@@ -226,6 +222,8 @@ func run(cwd string, in io.Reader, out io.Writer) error {
 
 	log.Printf("rgargs: %v\n", rgargs)
 
+	// joinedArgs := strings.Join(rgargs, " ")
+
 	cmd := exec.Command("rg", rgargs...)
 	cmd.Stdout = out
 	cmd.Stderr = os.Stderr
@@ -277,7 +275,7 @@ func getRgArgs(query SearchQuery) (RgArgs, error) {
 		for _, in := range otherIncludes {
 			// fixme .から始まるものは拡張子もマッチするという挙動が再現できない
 			if strings.HasPrefix(in, ".") {
-				args.Append("-g", fmt.Sprintf("**/*%s", in))
+				args.Append("-g", fmt.Sprintf("*%s", in))
 				continue
 			}
 
@@ -303,7 +301,6 @@ func getRgArgs(query SearchQuery) (RgArgs, error) {
 	searchPatternAfterDoubleDashes = query.Pattern
 	args.Append("--fixed-strings")
 
-	// これで区別が必要
 	args.Append("--")
 
 	if searchPatternAfterDoubleDashes != "" {
@@ -322,10 +319,12 @@ func spreadGlobComponents(globArg string) []string {
 	var ret []string
 
 	l := len(components)
+	_ = l
 	for i := range components {
 		r := components[0 : i+1]
 		s := strings.Join(r, "/")
 		ret = append(ret, s)
+		// これ足りない？
 		if i == l-1 && !strings.HasSuffix(s, "*") {
 			s += "/**"
 			ret = append(ret, s)

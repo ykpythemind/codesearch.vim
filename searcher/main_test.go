@@ -54,10 +54,11 @@ func TestParseOptions(t *testing.T) {
 	}
 
 	tc := []test{
-		{input: "caseOption: smartcase | useRegexp: false |", want: &queryOption{caseSensitivity: smartCase, useRegexp: false}},
-		{input: "caseOption: ignorecase | useRegexp: true |", want: &queryOption{caseSensitivity: ignoreCase, useRegexp: true}},
-		{input: "caseOption:ignorecase|useRegexp: true|", want: &queryOption{caseSensitivity: ignoreCase, useRegexp: true}},
+		{input: "caseOption: smartcase | useRegexp: false | useIgnoreSettingFile: false", want: &queryOption{caseSensitivity: smartCase, useRegexp: false}},
+		{input: "caseOption: ignorecase | useRegexp: true | useIgnoreSettingFile: false", want: &queryOption{caseSensitivity: ignoreCase, useRegexp: true}},
+		{input: "caseOption:ignorecase|useRegexp: true| useIgnoreSettingFile: false", want: &queryOption{caseSensitivity: ignoreCase, useRegexp: true}},
 		{input: "caseOption: ignorecase | useRegexp:", want: nil},
+		{input: "caseOption: ignorecase | useRegexp: false | useIgnoreSettingFile: true", want: &queryOption{caseSensitivity: ignoreCase, useIgnoreSettingFile: true}},
 	}
 
 	for _, tc := range tc {

@@ -70,8 +70,9 @@ type QueryParser struct {
 }
 
 type queryOption struct {
-	useRegexp       bool
-	caseSensitivity caseSensitivity
+	useRegexp            bool
+	caseSensitivity      caseSensitivity
+	useIgnoreSettingFile bool
 }
 
 type caseSensitivity string
@@ -146,11 +147,11 @@ func (p *QueryParser) Parse() (*SearchQuery, error) {
 }
 
 func parseOptions(optStr string) (*queryOption, error) {
-	optionLineRegexp := regexp.MustCompile(`caseOption:(.*)\|(\s*)useRegexp:(.*)\|`)
+	optionLineRegexp := regexp.MustCompile(`caseOption:(.*)\|(\s*)useRegexp:(.*)\|(\s*)useIgnoreSettingFile:(.*)`)
 	matched := optionLineRegexp.FindStringSubmatch(optStr)
 
 	// log.Printf("%+v\n", matched)
-	if len(matched) != 4 {
+	if len(matched) != 6 {
 		return nil, errors.New("format is wrong")
 	}
 
@@ -165,7 +166,11 @@ func parseOptions(optStr string) (*queryOption, error) {
 	}
 	useregexp := strings.TrimSpace(matched[3])
 
-	return &queryOption{useRegexp: useregexp == "true", caseSensitivity: casesence}, nil
+	useignore := strings.TrimSpace(matched[5])
+
+	return &queryOption{
+		useRegexp: useregexp == "true", caseSensitivity: casesence, useIgnoreSettingFile: useignore == "true",
+	}, nil
 }
 
 func (p *QueryParser) ignoreLine(line string) bool {
@@ -286,7 +291,17 @@ func getRgArgs(query SearchQuery) (RgArgs, error) {
 		}
 	}
 
-	// doubleStarIncludes
+	// todo: doubleStarIncludes
+
+	// todo: excludes
+
+	if query.Option.useIgnoreSettingFile {
+		// ???
+		// args.Append("--no-ignore-parent")
+	} else {
+		// Don't use .gitignore or .ignore
+		args.Append("--no-ignore")
+	}
 
 	// Allow $ to match /r/n
 	args.Append("--crlf")

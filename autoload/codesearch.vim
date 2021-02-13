@@ -28,7 +28,7 @@ function! codesearch#open() abort
   call append(3, "▿ excludes")
   call append(4, "")
   call append(5, "▿ options")
-  call append(6, "| caseOption: smartCase | useRegexp: false |")
+  call append(6, "caseOption: smartCase | useRegexp: false | useIgnoreSettingFile: true")
   call append(7, "")
   call append(8, "[option] caseOption... smartCase,ignoreCase,caseSensitive")
   call append(9, "[key] q (quit)")

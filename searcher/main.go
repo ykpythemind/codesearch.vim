@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -67,6 +68,19 @@ type QueryParser struct {
 	pattern        string
 }
 
+type queryOption struct {
+	useRegexp       bool
+	caseSensitivity caseSensitivity
+}
+
+type caseSensitivity string
+
+var (
+	smartCase     caseSensitivity = "smartCase"
+	ignoreCase    caseSensitivity = "ignoreCase"
+	caseSensitive caseSensitivity = "caseSensitive"
+)
+
 func NewQueryParser(input string) *QueryParser {
 	return &QueryParser{input: input}
 }
@@ -77,6 +91,8 @@ func (p *QueryParser) Parse() (*SearchQuery, error) {
 
 	includes := ""
 	excludes := ""
+	options := queryOption{}
+	_ = options
 
 	for scanner.Scan() {
 		t := scanner.Text()
@@ -102,6 +118,19 @@ func (p *QueryParser) Parse() (*SearchQuery, error) {
 					excludes = trim(t)
 				}
 			}
+		} else if strings.HasPrefix(t, metaMarker+" options") {
+			p.endPatternReading()
+			if scanner.Scan() {
+				t = scanner.Text()
+				if p.ignoreLine(t) {
+					goto scanned
+				} else {
+					opt, err := parseOptions(trim(t))
+					if err == nil {
+						options = *opt
+					}
+				}
+			}
 		} else {
 			// read pattern
 			if p.patternReading {
@@ -113,6 +142,26 @@ func (p *QueryParser) Parse() (*SearchQuery, error) {
 	// 最後まで読んだ ---
 
 	return &SearchQuery{Pattern: p.pattern, Includes: includes, Excludes: excludes}, nil
+}
+
+func parseOptions(optStr string) (*queryOption, error) {
+	optionLineRegexp := regexp.MustCompile(`caseOption:(.*)\| useRegexp:(.*)\|`)
+	matched := optionLineRegexp.FindStringSubmatch(optStr)
+	if len(matched) != 3 {
+		return nil, errors.New("no matched")
+	}
+
+	log.Printf("%v\n", matched)
+
+	casestr := strings.ToLower(matched[1])
+	var casesence caseSensitivity
+	if casestr == "smartcase" {
+		casesence = smartCase
+	} else if casestr == "ignorecase" {
+		casesence = ignoreCase
+	}
+
+	return &queryOption{useRegexp: matched[2] == "true", caseSensitivity: casesence}, nil
 }
 
 func trim(str string) string {

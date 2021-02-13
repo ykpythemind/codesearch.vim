@@ -18,7 +18,7 @@ function! codesearch#open() abort
 
   f codesearch
   autocmd BufWriteCmd <buffer> call s:search()
-  autocmd FileType codesearch nnoremap <buffer> q <C-w>c
+  autocmd FileType codesearch nmap <buffer> q <C-w>c
   $
   startinsert
 
@@ -26,6 +26,11 @@ function! codesearch#open() abort
   call append(1, "▿ includes")
   call append(2, "")
   call append(3, "▿ excludes")
+  call append(4, "")
+  call append(5, "▿ options")
+  call append(6, "| caseOption: smartcase | useRegexp: false |")
+  call append(7, "")
+
   call setpos('.', pos)
 endfunction
 

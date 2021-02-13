@@ -45,3 +45,32 @@ hoge
 		}
 	}
 }
+
+func TestParseOptions(t *testing.T) {
+	type test struct {
+		input string
+		want  *queryOption
+	}
+
+	tc := []test{
+		{input: "caseOption: smartcase | useRegexp: false |", want: &queryOption{caseSensitivity: smartCase, useRegexp: false}},
+		{input: "caseOption: ignorecase | useRegexp: true|", want: &queryOption{caseSensitivity: ignoreCase, useRegexp: true}},
+		{input: "caseOption: ignorecase | useRegexp:", want: nil},
+	}
+
+	for _, tc := range tc {
+		tc := tc
+
+		got, err := parseOptions(tc.input)
+		if err != nil {
+			if tc.want != nil {
+				t.Error(err)
+			}
+		}
+
+		if got != tc.want {
+			t.Errorf("want: %v, got: %v", tc.want, got)
+		}
+	}
+
+}

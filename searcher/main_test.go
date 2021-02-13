@@ -1,6 +1,7 @@
 package main
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -54,7 +55,8 @@ func TestParseOptions(t *testing.T) {
 
 	tc := []test{
 		{input: "caseOption: smartcase | useRegexp: false |", want: &queryOption{caseSensitivity: smartCase, useRegexp: false}},
-		{input: "caseOption: ignorecase | useRegexp: true|", want: &queryOption{caseSensitivity: ignoreCase, useRegexp: true}},
+		{input: "caseOption: ignorecase | useRegexp: true |", want: &queryOption{caseSensitivity: ignoreCase, useRegexp: true}},
+		{input: "caseOption:ignorecase|useRegexp: true|", want: &queryOption{caseSensitivity: ignoreCase, useRegexp: true}},
 		{input: "caseOption: ignorecase | useRegexp:", want: nil},
 	}
 
@@ -68,8 +70,8 @@ func TestParseOptions(t *testing.T) {
 			}
 		}
 
-		if got != tc.want {
-			t.Errorf("want: %v, got: %v", tc.want, got)
+		if !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("input: %s, want: %v, got: %v", tc.input, tc.want, got)
 		}
 	}
 

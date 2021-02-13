@@ -60,6 +60,7 @@ type SearchQuery struct {
 	Pattern  string
 	Includes string
 	Excludes string
+	Option   queryOption
 }
 
 type QueryParser struct {
@@ -141,27 +142,30 @@ func (p *QueryParser) Parse() (*SearchQuery, error) {
 
 	// 最後まで読んだ ---
 
-	return &SearchQuery{Pattern: p.pattern, Includes: includes, Excludes: excludes}, nil
+	return &SearchQuery{Pattern: p.pattern, Includes: includes, Excludes: excludes, Option: options}, nil
 }
 
 func parseOptions(optStr string) (*queryOption, error) {
-	optionLineRegexp := regexp.MustCompile(`caseOption:(.*)\| useRegexp:(.*)\|`)
+	optionLineRegexp := regexp.MustCompile(`caseOption:(.*)\|(\s*)useRegexp:(.*)\|`)
 	matched := optionLineRegexp.FindStringSubmatch(optStr)
-	if len(matched) != 3 {
-		return nil, errors.New("no matched")
+
+	// log.Printf("%+v\n", matched)
+	if len(matched) != 4 {
+		return nil, errors.New("format is wrong")
 	}
 
-	log.Printf("%v\n", matched)
-
-	casestr := strings.ToLower(matched[1])
+	casestr := strings.TrimSpace(strings.ToLower(matched[1]))
 	var casesence caseSensitivity
 	if casestr == "smartcase" {
 		casesence = smartCase
 	} else if casestr == "ignorecase" {
 		casesence = ignoreCase
+	} else if casestr == "sensitive" {
+		casesence = caseSensitive
 	}
+	useregexp := strings.TrimSpace(matched[3])
 
-	return &queryOption{useRegexp: matched[2] == "true", caseSensitivity: casesence}, nil
+	return &queryOption{useRegexp: useregexp == "true", caseSensitivity: casesence}, nil
 }
 
 func trim(str string) string {
@@ -210,10 +214,6 @@ func run(cwd string, in io.Reader, out io.Writer) error {
 		return err
 	}
 
-	/*
-		const cwd = options.folder.fsPath;
-	*/
-
 	var escapedArgs []string
 	for _, arg := range rgargs {
 		if !argRegexp.MatchString(arg) {
@@ -225,9 +225,6 @@ func run(cwd string, in io.Reader, out io.Writer) error {
 	}
 
 	log.Printf("rgargs: %v\n", rgargs)
-	// log.Println(fmt.Sprintf(`escaped args: %+v`, escapedArgs))
-
-	// joinedArgs := strings.Join(escapedArgs, " ")
 
 	cmd := exec.Command("rg", rgargs...)
 	cmd.Stdout = out
@@ -255,6 +252,20 @@ func getRgArgs(query SearchQuery) (RgArgs, error) {
 
 	args.Append("--hidden")
 
+	if query.Option.caseSensitivity == smartCase {
+		args.Append("--smart-case")
+	} else if query.Option.caseSensitivity == ignoreCase {
+		args.Append("--ignore-case")
+	} else if query.Option.caseSensitivity == caseSensitive {
+		args.Append("--case-sensitive")
+	} else {
+		return nil, fmt.Errorf("%s is unknown", query.Option.caseSensitivity)
+	}
+
+	if query.Option.useRegexp {
+		return nil, errors.New("regexp is not implemented")
+	}
+
 	var doublestarIncludes, otherIncludes []string
 	_ = doublestarIncludes
 
@@ -264,7 +275,7 @@ func getRgArgs(query SearchQuery) (RgArgs, error) {
 
 		args.Append("-g", "!*")
 		for _, in := range otherIncludes {
-			// .から始まるものは拡張子として扱う
+			// fixme .から始まるものは拡張子もマッチするという挙動が再現できない
 			if strings.HasPrefix(in, ".") {
 				args.Append("-g", fmt.Sprintf("**/*%s", in))
 				continue

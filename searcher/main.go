@@ -100,7 +100,7 @@ func (p *QueryParser) Parse() (*SearchQuery, error) {
 		t := scanner.Text()
 	scanned:
 
-		if strings.HasPrefix(t, metaMarker+" includes") {
+		if strings.HasPrefix(t, metaMarker+" files to include") {
 			p.endPatternReading()
 			if scanner.Scan() {
 				t = scanner.Text()
@@ -110,7 +110,7 @@ func (p *QueryParser) Parse() (*SearchQuery, error) {
 					includes = strings.TrimSpace(t)
 				}
 			}
-		} else if strings.HasPrefix(t, metaMarker+" excludes") {
+		} else if strings.HasPrefix(t, metaMarker+" files to exclude") {
 			p.endPatternReading()
 			if scanner.Scan() {
 				t = scanner.Text()

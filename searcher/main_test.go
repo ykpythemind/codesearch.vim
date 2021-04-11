@@ -20,14 +20,14 @@ func TestParseSearchQuery(t *testing.T) {
 fuga
 `, want: SearchQuery{Pattern: "piyo\n\nfuga"}},
 		{input: `piyo
-▿ includes
+▿ files to include
 app/,*.jpg`, want: SearchQuery{Pattern: "piyo", Includes: "app/,*.jpg"}},
 		{input: `piyo
 
-▿ includes
+▿ files to include
 app/,*.jpg
 
-▿ excludes
+▿ files to exclude
 hoge
 `, want: SearchQuery{Pattern: "piyo\n", Includes: "app/,*.jpg", Excludes: "hoge"}},
 	}

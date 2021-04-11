@@ -23,9 +23,9 @@ function! codesearch#open() abort
   startinsert
 
   let pos = getpos(".")
-  call append(1, "▿ includes")
+  call append(1, "▿ files to include")
   call append(2, "")
-  call append(3, "▿ excludes")
+  call append(3, "▿ files to exclude")
   call append(4, "")
   call append(5, "▿ options")
   call append(6, "caseOption: smartCase | useRegexp: false | useIgnoreSettingFile: true")
